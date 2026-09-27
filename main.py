@@ -1,16 +1,18 @@
-# This is a sample Python script.
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+# Tạo khóa ngẫu nhiên 16 bytes (128-bit) cho AES
+key = get_random_bytes(16)
+cipher = AES.new(key, AES.MODE_EAX)
 
+# Dữ liệu cần mã hóa
+data = b"Bai tap mon An toan va bao mat thong tin"
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+# Quy trình mã hóa
+ciphertext, tag = cipher.encrypt_and_digest(data)
+print("Ban ma hoa (Ciphertext):", ciphertext)
 
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+# Quy trình giải mã
+cipher_dec = AES.new(key, AES.MODE_EAX, cipher.nonce)
+plaintext = cipher_dec.decrypt_and_verify(ciphertext, tag)
+print("Ban giai ma (Plaintext):", plaintext.decode('utf-8'))

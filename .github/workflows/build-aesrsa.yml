@@ -1,0 +1,23 @@
+name: Build AES-RSA WinForms
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'AES_RSA_BAITAP/**'
+      - '.github/workflows/build-aesrsa.yml'
+  pull_request:
+    paths:
+      - 'AES_RSA_BAITAP/**'
+      - '.github/workflows/build-aesrsa.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build project
+        run: dotnet build .\AES_RSA_BAITAP\AesRsaHomework\AesRsaHomework.csproj --configuration Release

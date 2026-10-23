@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+*.pem
+*.key
+*.pfx
+*.p12
+*.aes
+*.sig
+*.b64
+rsa-ciphertext.b64
+signature.txt
+*.iso
+*.zip.testdata

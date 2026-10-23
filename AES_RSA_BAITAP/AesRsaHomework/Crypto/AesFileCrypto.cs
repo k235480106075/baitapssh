@@ -7,8 +7,8 @@ namespace AesRsaHomework.Crypto;
 /// <summary>
 /// AES-256-GCM helpers. Files are encrypted in 1 MiB authenticated chunks so large files
 /// can be processed without loading the entire file into memory.
-/// File format: 8-byte magic, then repeated [Int32 length][12-byte nonce][ciphertext][16-byte tag],
-/// followed by an Int32 length of zero. Each chunk authenticates its sequence number and length.
+/// File format: 8-byte magic, authenticated chunk records, then a GCM-authenticated footer
+/// binding the total chunk count and byte length. Decryption writes to a temporary file until validation succeeds.
 /// </summary>
 public static class AesFileCrypto
 {
@@ -96,35 +96,60 @@ public static class AesFileCrypto
         if (string.Equals(sourceFull, destinationFull, StringComparison.OrdinalIgnoreCase))
             throw new IOException("Tệp đầu ra không được trùng với tệp đầu vào.");
 
-        using var input = new FileStream(sourceFull, FileMode.Open, FileAccess.Read, FileShare.Read,
-            ChunkSizeBytes, FileOptions.SequentialScan);
-        using var output = new FileStream(destinationFull, FileMode.Create, FileAccess.Write, FileShare.None,
-            ChunkSizeBytes, FileOptions.SequentialScan);
-        using var aes = new AesGcm(key, TagSizeBytes);
-
-        output.Write(FileMagic);
-        byte[] plainBuffer = new byte[ChunkSizeBytes];
-        long chunkIndex = 0;
-
-        while (true)
+        string tempPath = destinationFull + "." + Guid.NewGuid().ToString("N") + ".partial";
+        try
         {
-            int read = ReadChunk(input, plainBuffer);
-            WriteInt32(output, read);
-            if (read == 0)
-                break;
+            using (var input = new FileStream(sourceFull, FileMode.Open, FileAccess.Read, FileShare.Read,
+                       ChunkSizeBytes, FileOptions.SequentialScan))
+            using (var output = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                       ChunkSizeBytes, FileOptions.SequentialScan))
+            using (var aes = new AesGcm(key, TagSizeBytes))
+            {
+                output.Write(FileMagic);
+                byte[] plainBuffer = new byte[ChunkSizeBytes];
+                long chunkIndex = 0;
+                long totalBytes = 0;
 
-            byte[] nonce = RandomNumberGenerator.GetBytes(NonceSizeBytes);
-            byte[] cipher = new byte[read];
-            byte[] tag = new byte[TagSizeBytes];
-            byte[] aad = BuildChunkAad(chunkIndex, read);
-            aes.Encrypt(nonce, plainBuffer.AsSpan(0, read), cipher, tag, aad);
+                while (true)
+                {
+                    int read = ReadChunk(input, plainBuffer);
+                    if (read == 0)
+                        break;
 
-            output.Write(nonce);
-            output.Write(cipher);
-            output.Write(tag);
-            chunkIndex++;
+                    WriteInt32(output, read);
+                    byte[] nonce = RandomNumberGenerator.GetBytes(NonceSizeBytes);
+                    byte[] cipher = new byte[read];
+                    byte[] tag = new byte[TagSizeBytes];
+                    byte[] aad = BuildChunkAad(chunkIndex, read);
+                    aes.Encrypt(nonce, plainBuffer.AsSpan(0, read), cipher, tag, aad);
+
+                    output.Write(nonce);
+                    output.Write(cipher);
+                    output.Write(tag);
+                    chunkIndex++;
+                    totalBytes += read;
+                }
+
+                // Authenticated footer binds the complete file's chunk count and byte length.
+                WriteInt32(output, -1);
+                WriteInt64(output, chunkIndex);
+                WriteInt64(output, totalBytes);
+                byte[] footerNonce = RandomNumberGenerator.GetBytes(NonceSizeBytes);
+                byte[] footerTag = new byte[TagSizeBytes];
+                aes.Encrypt(footerNonce, Array.Empty<byte>(), Array.Empty<byte>(), footerTag,
+                    BuildFooterAad(chunkIndex, totalBytes));
+                output.Write(footerNonce);
+                output.Write(footerTag);
+                output.Flush(true);
+            }
+
+            File.Move(tempPath, destinationFull, true);
         }
-        output.Flush(true);
+        catch
+        {
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+            throw;
+        }
     }
 
     public static void DecryptFile(string inputPath, string outputPath, byte[] key)
@@ -135,38 +160,66 @@ public static class AesFileCrypto
         if (string.Equals(sourceFull, destinationFull, StringComparison.OrdinalIgnoreCase))
             throw new IOException("Tệp đầu ra không được trùng với tệp đầu vào.");
 
-        using var input = new FileStream(sourceFull, FileMode.Open, FileAccess.Read, FileShare.Read,
-            ChunkSizeBytes, FileOptions.SequentialScan);
-        using var output = new FileStream(destinationFull, FileMode.Create, FileAccess.Write, FileShare.None,
-            ChunkSizeBytes, FileOptions.SequentialScan);
-        using var aes = new AesGcm(key, TagSizeBytes);
-
-        byte[] magic = ReadExactly(input, FileMagic.Length);
-        if (!CryptographicOperations.FixedTimeEquals(magic, FileMagic))
-            throw new CryptographicException("Tệp không phải định dạng AES-SAFE của ứng dụng.");
-
-        long chunkIndex = 0;
-        while (true)
+        string tempPath = destinationFull + "." + Guid.NewGuid().ToString("N") + ".partial";
+        try
         {
-            int length = ReadInt32(input);
-            if (length == 0)
-                break;
-            if (length < 0 || length > ChunkSizeBytes)
-                throw new CryptographicException("Kích thước khối trong tệp mã hóa không hợp lệ.");
+            using (var input = new FileStream(sourceFull, FileMode.Open, FileAccess.Read, FileShare.Read,
+                       ChunkSizeBytes, FileOptions.SequentialScan))
+            using (var output = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                       ChunkSizeBytes, FileOptions.SequentialScan))
+            using (var aes = new AesGcm(key, TagSizeBytes))
+            {
+                byte[] magic = ReadExactly(input, FileMagic.Length);
+                if (!CryptographicOperations.FixedTimeEquals(magic, FileMagic))
+                    throw new CryptographicException("Tệp không phải định dạng AES-SAFE của ứng dụng.");
 
-            byte[] nonce = ReadExactly(input, NonceSizeBytes);
-            byte[] cipher = ReadExactly(input, length);
-            byte[] tag = ReadExactly(input, TagSizeBytes);
-            byte[] plain = new byte[length];
-            byte[] aad = BuildChunkAad(chunkIndex, length);
-            aes.Decrypt(nonce, cipher, tag, plain, aad);
-            output.Write(plain);
-            chunkIndex++;
+                long chunkIndex = 0;
+                long totalBytes = 0;
+                bool footerSeen = false;
+                while (!footerSeen)
+                {
+                    int length = ReadInt32(input);
+                    if (length == -1)
+                    {
+                        long declaredChunks = ReadInt64(input);
+                        long declaredBytes = ReadInt64(input);
+                        byte[] nonce = ReadExactly(input, NonceSizeBytes);
+                        byte[] tag = ReadExactly(input, TagSizeBytes);
+                        aes.Decrypt(nonce, Array.Empty<byte>(), tag, Array.Empty<byte>(),
+                            BuildFooterAad(declaredChunks, declaredBytes));
+                        if (declaredChunks != chunkIndex || declaredBytes != totalBytes)
+                            throw new CryptographicException("Footer không khớp với số khối hoặc tổng dung lượng; tệp có thể bị cắt cụt.");
+                        footerSeen = true;
+                    }
+                    else
+                    {
+                        if (length <= 0 || length > ChunkSizeBytes)
+                            throw new CryptographicException("Kích thước khối trong tệp mã hóa không hợp lệ.");
+
+                        byte[] nonce = ReadExactly(input, NonceSizeBytes);
+                        byte[] cipher = ReadExactly(input, length);
+                        byte[] tag = ReadExactly(input, TagSizeBytes);
+                        byte[] plain = new byte[length];
+                        aes.Decrypt(nonce, cipher, tag, plain, BuildChunkAad(chunkIndex, length));
+                        output.Write(plain);
+                        chunkIndex++;
+                        totalBytes += length;
+                    }
+                }
+
+                if (input.ReadByte() != -1)
+                    throw new CryptographicException("Tệp mã hóa có dữ liệu thừa sau footer.");
+                output.Flush(true);
+            }
+
+            // Only publish plaintext after every block and the authenticated footer have passed.
+            File.Move(tempPath, destinationFull, true);
         }
-
-        if (input.ReadByte() != -1)
-            throw new CryptographicException("Tệp mã hóa có dữ liệu thừa sau dấu kết thúc.");
-        output.Flush(true);
+        catch
+        {
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+            throw;
+        }
     }
 
     public static bool CompareFilesByteByByte(string firstPath, string secondPath)
@@ -211,6 +264,30 @@ public static class AesFileCrypto
         BinaryPrimitives.WriteInt64LittleEndian(aad.AsSpan(FileMagic.Length, sizeof(long)), chunkIndex);
         BinaryPrimitives.WriteInt32LittleEndian(aad.AsSpan(FileMagic.Length + sizeof(long), sizeof(int)), length);
         return aad;
+    }
+
+    private static byte[] BuildFooterAad(long chunkCount, long totalBytes)
+    {
+        byte[] marker = Encoding.ASCII.GetBytes("AESSAFE1-END");
+        byte[] aad = new byte[FileMagic.Length + marker.Length + sizeof(long) + sizeof(long)];
+        FileMagic.CopyTo(aad, 0);
+        marker.CopyTo(aad, FileMagic.Length);
+        BinaryPrimitives.WriteInt64LittleEndian(aad.AsSpan(FileMagic.Length + marker.Length, sizeof(long)), chunkCount);
+        BinaryPrimitives.WriteInt64LittleEndian(aad.AsSpan(FileMagic.Length + marker.Length + sizeof(long), sizeof(long)), totalBytes);
+        return aad;
+    }
+
+    private static void WriteInt64(Stream stream, long value)
+    {
+        Span<byte> bytes = stackalloc byte[sizeof(long)];
+        BinaryPrimitives.WriteInt64LittleEndian(bytes, value);
+        stream.Write(bytes);
+    }
+
+    private static long ReadInt64(Stream stream)
+    {
+        byte[] bytes = ReadExactly(stream, sizeof(long));
+        return BinaryPrimitives.ReadInt64LittleEndian(bytes);
     }
 
     private static int ReadChunk(Stream input, byte[] buffer)

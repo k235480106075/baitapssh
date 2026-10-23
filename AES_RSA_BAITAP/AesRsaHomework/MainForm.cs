@@ -30,7 +30,7 @@ public sealed class MainForm : Form
             Btn("Nạp khóa...", (_, _) => Run(() => { using var d = new OpenFileDialog { Filter = "Key (*.key)|*.key|Text (*.txt)|*.txt" }; if (d.ShowDialog(this) == DialogResult.OK) { aesKey = AesFileCrypto.LoadKey(d.FileName); aesStatus.Text = "Đã nạp khóa AES-256."; } })), aesStatus)));
         Add(p, Group("Mã hóa / giải mã văn bản", Stack(Label("Văn bản gốc UTF-8:"), aesIn, Label("Bản mã Base64:"), aesOut,
             Buttons(Btn("Mã hóa", (_, _) => Run(() => { EnsureAes(); aesOut.Text = AesFileCrypto.EncryptText(aesIn.Text, aesKey!); })),
-                    Btn("Giải mã", (_, _) => Run(() => { EnsureAes(); aesIn.Text = AesFileCrypto.DecryptText(aesOut.Text, aesKey!); })))));
+                    Btn("Giải mã", (_, _) => Run(() => { EnsureAes(); aesIn.Text = AesFileCrypto.DecryptText(aesOut.Text, aesKey!); }))))));
         var fileButtons = Buttons(filePath,
             Btn("Chọn nguồn...", (_, _) => Run(() => { using var d = new OpenFileDialog(); if (d.ShowDialog(this) == DialogResult.OK) { filePath.Text = d.FileName; originalFile = d.FileName; } })),
             Btn("Mã hóa tệp...", async (_, _) => await EncryptFileAsync()),

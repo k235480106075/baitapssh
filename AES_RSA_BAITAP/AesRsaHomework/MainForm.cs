@@ -201,7 +201,7 @@ public sealed class MainForm : Form
 
     static TabPage Page(string title) { var p = new TabPage(title); var f = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(8) }; p.Controls.Add(f); p.Tag = f; return p; }
     static void Add(TabPage p, Control c) => ((FlowLayoutPanel)p.Tag!).Controls.Add(c);
-    static Control Group(string title, Control content) { var g = new GroupBox { Text = title, Width = 1020, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(8), Margin = new Padding(4, 4, 4, 10) }; content.Dock = DockStyle.Top; g.Controls.Add(content); return g; }
+    static Control Group(string title, Control content) { var g = new GroupBox { Text = title, Width = 1020, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(8), Margin = new Padding(4, 4, 4, 10) }; content.Dock = DockStyle.None; content.Location = new Point(8, 22); g.Controls.Add(content); return g; }
     static FlowLayoutPanel Buttons(params Control[] items) { var p = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top, FlowDirection = FlowDirection.LeftToRight, WrapContents = true, Padding = new Padding(3) }; p.Controls.AddRange(items); return p; }
     static FlowLayoutPanel Stack(params Control[] items) { var p = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(3) }; foreach (var i in items) { i.Margin = new Padding(3, 4, 3, 4); p.Controls.Add(i); } return p; }
     static Label Label(string text) => new() { Text = text, AutoSize = true, MaximumSize = new Size(1000, 0) };

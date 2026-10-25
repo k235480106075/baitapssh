@@ -15,7 +15,7 @@ Người dùng báo đã chạy thử các kích thước tệp sau:
 
 | Tệp thử nghiệm | Kết quả được báo cáo | Thời gian mã hóa | Thời gian giải mã | Byte/SHA-256 sau giải mã |
 |---|---|---:|---:|---|
-| 100 MB | Hoàn thành | Chưa ghi lại | Chưa ghi lại | Ảnh chụp hiển thị `Byte: TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
+| 100 MB | Hoàn thành | Chưa ghi lại | Chưa ghi lại |  `Byte: TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
 | 500 MiB | Hoàn thành | Chưa ghi lại | Chưa ghi lại | Chưa có số liệu chi tiết được lưu trong ghi chú |
 | 1 GiB | Hoàn thành | Chưa ghi lại | Chưa ghi lại | Chưa có số liệu chi tiết được lưu trong ghi chú |
 | 2 GiB | Hoàn thành | Chưa ghi lại | Chưa ghi lại | Chưa có số liệu chi tiết được lưu trong ghi chú |

@@ -15,10 +15,10 @@ Người dùng báo đã chạy thử các kích thước tệp sau:
 
 | Tệp thử nghiệm | Kết quả được báo cáo | Thời gian mã hóa | Thời gian giải mã | Byte/SHA-256 sau giải mã |
 |---|---|---:|---:|---|
-| 100 MB | Hoàn thành | Chưa ghi lại | Chưa ghi lại |  `Byte: TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
-| 500 MiB | Hoàn thành | Chưa ghi lại | Chưa ghi lại | Chưa có số liệu chi tiết được lưu trong ghi chú |
-| 1 GiB | Hoàn thành | Chưa ghi lại | Chưa ghi lại | Chưa có số liệu chi tiết được lưu trong ghi chú |
-| 2 GiB | Hoàn thành | Chưa ghi lại | Chưa ghi lại | Chưa có số liệu chi tiết được lưu trong ghi chú |
+| 100 MB | Hoàn thành | 0,389s(~257,03MiB/s) |0,288s |  ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
+| 500 MiB | Hoàn thành | 1,098s(~455,53MiB/s) | 1,028s |  ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
+| 1 GiB | Hoàn thành | 1,605s?(~638MiB/s) | 2,090s | ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
+| 2 GiB | Hoàn thành | 22,914s(~88,38MiB/s) | 4,501 | ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
 
 Chương trình mô tả cơ chế AES-GCM xử lý tệp theo từng khối 1 MiB. Cần ghi thêm thời gian, tốc độ và kết quả so sánh byte/SHA-256 riêng cho từng kích thước nếu báo cáo yêu cầu bảng benchmark đầy đủ.
 

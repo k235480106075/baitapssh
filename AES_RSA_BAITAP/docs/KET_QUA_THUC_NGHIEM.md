@@ -67,4 +67,3 @@ Với khóa RSA-2048 và OAEP-SHA256, độ dài bản rõ tối đa là 190 byt
 
 Các chức năng AES-256-GCM, RSA-2048/OAEP-SHA256, SHA-256 và chữ ký số RSA-PSS/SHA-256 đã được kiểm thử. Với các lần thử đã ghi nhận, dữ liệu tệp sau giải mã AES trùng khớp với dữ liệu nguồn đến kích thước 2 GiB; RSA mã hóa/giải mã dữ liệu nhỏ thành công trong giới hạn cho phép; SHA-256 tạo giá trị băm 256 bit; và kiểm tra chữ ký cho kết quả hợp lệ hoặc không hợp lệ tương ứng với dữ liệu xác minh.
 
-**Lưu ý bảo mật:** Không đưa khóa riêng tư `rsa-private.pem` hoặc khóa bí mật dùng trong thử nghiệm lên repository công khai.

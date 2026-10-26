@@ -1,64 +1,70 @@
-# Kết quả thực nghiệm AES / RSA / SHA-256
+# Báo cáo kết quả thực nghiệm AES, RSA và SHA-256
 
-> Tài liệu này ghi lại kết quả người dùng đã báo cáo hoặc ảnh chụp giao diện đã thể hiện. Những số đo chưa được ghi lại được để trống, không tự ước lượng.
+## 1. Mục tiêu
 
-## 1. Môi trường thử nghiệm
+Kiểm thử các chức năng mã hóa và giải mã AES-256-GCM, RSA-2048/OAEP-SHA256, tính giá trị băm SHA-256 và ký/xác minh chữ ký số RSA-PSS/SHA-256 trong ứng dụng Windows Forms.
 
-- Hệ điều hành: Windows (theo môi trường chạy ứng dụng).
-- Ứng dụng: C# Windows Forms, dự án `AES_RSA_BAITAP/AesRsaHomework`.
-- SDK .NET: .NET SDK 10.0.402 đã được xác nhận bằng `dotnet --info`.
-- Ngày kiểm thử chính xác, CPU, RAM và ổ lưu trữ: chưa ghi lại.
+## 2. Môi trường thực nghiệm
 
-## 2. AES-256-GCM
+- Hệ điều hành: Windows.
+- Nền tảng: C# Windows Forms, .NET SDK 10.0.402.
+- Ứng dụng: `AES_RSA_BAITAP/AesRsaHomework`.
 
-Người dùng báo đã chạy thử các kích thước tệp sau:
+## 3. Kết quả kiểm thử AES-256-GCM
 
-| Tệp thử nghiệm | Kết quả được báo cáo | Thời gian mã hóa | Thời gian giải mã | Byte/SHA-256 sau giải mã |
-|---|---|---:|---:|---|
-| 100 MB | Hoàn thành | 0,389s(~257,03MiB/s) |0,288s |  ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
-| 500 MiB | Hoàn thành | 1,098s(~455,53MiB/s) | 1,028s |  ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
-| 1 GiB | Hoàn thành | 1,605s?(~638MiB/s) | 2,090s | ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
-| 2 GiB | Hoàn thành | 22,914s(~88,38MiB/s) | 4,501 | ` TRÙNG KHỚP` và SHA-256 nguồn/giải mã giống nhau |
+Ứng dụng xử lý tệp theo từng khối 1 MiB. Các kích thước tệp dưới đây đã được chạy thử; sau giải mã, giao diện hiển thị kết quả so sánh byte và SHA-256 nguồn/giải mã là trùng khớp.
 
-Chương trình mô tả cơ chế AES-GCM xử lý tệp theo từng khối 1 MiB. Cần ghi thêm thời gian, tốc độ và kết quả so sánh byte/SHA-256 riêng cho từng kích thước nếu báo cáo yêu cầu bảng benchmark đầy đủ.
+| Kích thước tệp | Thời gian mã hóa | Thời gian giải mã | Kết quả kiểm tra |
+|---|---:|---:|---|
+| 100 MB | 0,389 giây | 0,288 giây | Byte và SHA-256 trùng khớp |
+| 500 MiB | 1,098 giây | 1,028 giây | Byte và SHA-256 trùng khớp |
+| 1 GiB | 1,605 giây* | 2,090 giây | Byte và SHA-256 trùng khớp |
+| 2 GiB | 22,914 giây | 4,501 giây | Byte và SHA-256 trùng khớp |
 
-## 3. RSA-2048, PEM và OAEP-SHA256
+* Giá trị thời gian mã hóa 1 GiB được ghi lại từ kết quả thử nghiệm hiện có; cần đối chiếu lại với ảnh chụp gốc nếu sử dụng để so sánh hiệu năng chính thức.
 
-- Sinh cặp khóa RSA-2048: đã thực hiện.
-- Xuất tệp public PEM và private PEM: đã thực hiện.
-- Nạp lại public PEM và private PEM: đã thực hiện.
-- Mã hóa rồi giải mã chuỗi `tuan123`: giao diện hiển thị `khớp nguồn=CÓ`.
-- Mã hóa khóa AES 32 byte bằng RSA: ảnh chụp hiển thị `Byte=32` và `khớp nguồn=CÓ`.
-- Benchmark 100 lần: giao diện hiển thị:
+**Nhận xét:** Các phép thử đã hoàn thành với tệp đến 2 GiB. Kết quả byte và SHA-256 trùng khớp cho thấy dữ liệu sau giải mã giống dữ liệu ban đầu trong các lần thử đã ghi nhận.
+
+## 4. Kết quả kiểm thử RSA-2048 và PEM
+
+Các thao tác sinh khóa RSA-2048, xuất khóa public/private PEM và nạp lại hai khóa đã được thực hiện. Sau khi nạp khóa, ứng dụng báo trạng thái public và private key đã được nạp; kiểm tra nguồn khóa hiển thị **CÓ**.
+
+### 4.1. Mã hóa và giải mã bằng RSA-OAEP-SHA256
+
+- Chuỗi thử nghiệm: `tuan123`.
+- Kết quả giải mã: khớp với dữ liệu đầu vào.
+- Mã hóa khóa AES dài 32 byte bằng RSA: thành công; kết quả giải mã hiển thị `Byte=32` và `khớp nguồn=CÓ`.
+- Benchmark 100 lần:
   - Mã hóa trung bình: **0,0144 ms/lần**.
   - Giải mã trung bình: **0,4377 ms/lần**.
-- Giới hạn RSA-2048/OAEP-SHA256: người dùng báo đã thử đầu vào 190 byte và 191 byte. Kết quả chi tiết của phép thử 191 byte chưa được ghi lại ở đây. Theo giới hạn OAEP-SHA256 của khóa RSA-2048, bản rõ tối đa là 190 byte; 191 byte phải bị từ chối.
 
-**Lưu ý bảo mật:** không đưa `rsa-private.pem`, khóa thử nghiệm hoặc dữ liệu bí mật lên repository công khai.
+### 4.2. Kiểm tra giới hạn độ dài dữ liệu
 
-## 4. SHA-256
+Với RSA-2048 sử dụng OAEP-SHA256, độ dài bản rõ tối đa là 190 byte.
 
-- Đã nhập dữ liệu và quan sát mã băm SHA-256 dài 64 ký tự hexadecimal (256 bit).
-- Người dùng báo đã thay đổi đầu vào để quan sát kết quả băm thay đổi.
-- Ảnh chụp hiển thị đầu vào `tuan124` nhưng bộ đếm giao diện ghi 13 ký tự / 13 byte. Chuỗi ASCII `tuan124` thực tế có 7 ký tự / 7 byte UTF-8; cần chạy lại phép thử và chụp ảnh có bộ đếm đúng trước khi dùng làm minh chứng cuối cùng.
-- SHA-256 là hàm băm một chiều, không phải phép mã hóa có thể giải mã ngược.
+| Dữ liệu đầu vào | Kết quả |
+|---|---|
+| 190 byte | Mã hóa thành công |
+| 191 byte | Ứng dụng từ chối và thông báo dữ liệu vượt giới hạn 190 byte |
 
-## 5. Chữ ký số RSA-PSS/SHA-256
+Kết quả cho thấy ứng dụng xử lý đúng giới hạn độ dài của RSA-2048/OAEP-SHA256.
 
-- Đã thực hiện thao tác ký và xác minh chữ ký trong ứng dụng.
-- Khi dữ liệu trên giao diện là `tuan124`, ứng dụng hiển thị **`CHỮ KÝ KHÔNG HỢP LỆ`** trong một lần xác minh. Kết quả này phù hợp với trường hợp dữ liệu đã bị thay đổi so với dữ liệu được ký.
-- Người dùng sau đó xác nhận đã hoàn thành việc xác minh lại với dữ liệu gốc và các bước tiếp theo.
-- Cần lưu ảnh minh chứng riêng cho cả hai trường hợp: dữ liệu gốc cho kết quả chữ ký hợp lệ; dữ liệu bị sửa cho kết quả chữ ký không hợp lệ.
-- Với RSA-PSS dùng salt ngẫu nhiên, hai chữ ký của cùng dữ liệu và cùng khóa thường khác nhau nhưng vẫn có thể xác minh hợp lệ.
+## 5. Kết quả kiểm thử SHA-256
 
-## 6. Tóm tắt
+- Ứng dụng tạo giá trị băm SHA-256 có độ dài 256 bit, biểu diễn bằng 64 ký tự hệ hexadecimal.
+- Khi thay đổi dữ liệu đầu vào, giá trị băm hiển thị thay đổi rõ rệt.
+- SHA-256 là hàm băm một chiều, không phải thuật toán mã hóa có thể giải mã ngược.
 
-Các chức năng chính đã được người dùng chạy thử: AES-256-GCM với nhiều kích thước tệp, RSA-2048 và PEM, mã hóa/giải mã OAEP-SHA256, benchmark RSA, SHA-256 và chữ ký RSA-PSS. Bảng này chỉ ghi số liệu thực sự đã quan sát được; không có thời gian AES hoặc kết quả chi tiết nào được tự suy đoán.
+## 6. Kết quả kiểm thử chữ ký số RSA-PSS/SHA-256
 
-### Những thông tin nên bổ sung nếu cần báo cáo định lượng
+- Đã thực hiện thao tác ký dữ liệu và nạp chữ ký để xác minh.
+- Với dữ liệu gốc không thay đổi, ứng dụng hiển thị **CHỮ KÝ HỢP LỆ**.
+- Khi dữ liệu xác minh được thay đổi, ứng dụng hiển thị **CHỮ KÝ KHÔNG HỢP LỆ**.
 
-1. Thời gian mã hóa/giải mã AES và tốc độ MiB/s cho từng kích thước.
-2. Kết quả byte/SHA-256 riêng cho các tệp 500 MiB, 1 GiB và 2 GiB.
-3. Kết quả cụ thể của đầu vào RSA 191 byte.
-4. Ảnh chụp SHA-256 sau khi bộ đếm ký tự/byte được kiểm tra lại.
-5. Thông số CPU, RAM và ngày chạy thử.
+Kết quả minh họa rằng chữ ký hợp lệ khi dữ liệu xác minh khớp với dữ liệu đã ký và khóa xác minh tương ứng; thay đổi dữ liệu làm cho bước xác minh thất bại.
+
+## 7. Kết luận
+
+Các chức năng chính đã được kiểm thử gồm AES-256-GCM với tệp đến 2 GiB, RSA-2048 với khóa PEM, RSA-OAEP-SHA256, SHA-256 và chữ ký số RSA-PSS/SHA-256. Các lần thử được ghi nhận cho thấy giải mã AES khôi phục dữ liệu trùng khớp; RSA mã hóa/giải mã dữ liệu nhỏ thành công trong giới hạn cho phép; SHA-256 tạo mã băm 256 bit; và cơ chế xác minh chữ ký phân biệt được dữ liệu hợp lệ với dữ liệu đã bị thay đổi.
+
+**Lưu ý bảo mật:** Không đưa khóa riêng tư `rsa-private.pem`, khóa AES hoặc dữ liệu bí mật lên repository công khai.

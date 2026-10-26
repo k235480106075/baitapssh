@@ -67,4 +67,4 @@ Kết quả minh họa rằng chữ ký hợp lệ khi dữ liệu xác minh kh�
 
 Các chức năng chính đã được kiểm thử gồm AES-256-GCM với tệp đến 2 GiB, RSA-2048 với khóa PEM, RSA-OAEP-SHA256, SHA-256 và chữ ký số RSA-PSS/SHA-256. Các lần thử được ghi nhận cho thấy giải mã AES khôi phục dữ liệu trùng khớp; RSA mã hóa/giải mã dữ liệu nhỏ thành công trong giới hạn cho phép; SHA-256 tạo mã băm 256 bit; và cơ chế xác minh chữ ký phân biệt được dữ liệu hợp lệ với dữ liệu đã bị thay đổi.
 
-**Lưu ý bảo mật:** Không đưa khóa riêng tư `rsa-private.pem`, khóa AES hoặc dữ liệu bí mật lên repository công khai.
+
